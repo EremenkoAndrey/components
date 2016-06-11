@@ -74,7 +74,7 @@ Controller.prototype.findBlocks = function ($object) {
             name,
             $elements;
     
-    $elements = ($(document).get(0) === document) ? $('[data-component]') : $object.find('[data-component]');
+    $elements = ($object.get(0) === document) ? $('[data-component]') : $object.find('[data-component]');
 
     $elements.each(function () {
         $item[0] = this;
@@ -173,9 +173,9 @@ Controller.prototype.on = function (name) {
 // name: Название события (строка) - обязательно
 // fn: Функция (ссылка на функцию, на ТУ ЖЕ САМУЮ функцию) - обязательно
 // type: Тип (строка), не обязательный аргумент
-// 
+// TODO: сделать функцию необязательный аргументом
 
-Controller.prototype.stopListening = function (name, fn, type) {
+Controller.prototype.stopListening = function (name, type, fn) {
     if (!this.listenetrs[name])
         return;
     var listeners = this.listenetrs[name];
@@ -190,6 +190,7 @@ Controller.prototype.stopListening = function (name, fn, type) {
         }
     }
 };
+
 // Изменяет собственное свойство объекта, при его наличии.
 // При изменении срабатывает событие 'change' с типом соответствующим 
 // имени изменяемого свойства
@@ -200,7 +201,7 @@ Controller.prototype.stopListening = function (name, fn, type) {
 // this.set({'proper': 6});
 // Установит в свойство this.proper значение 6
 // сгенерирует событие 'change' с типом 'proper'
-
+// TODO: не создавать событие, если совйство не изменилось
 Controller.prototype.set = function (propObj, silence) {
 
     if (typeof (propObj) !== 'object')
