@@ -60,7 +60,6 @@ Controller.registerComponent = function (name, Component) {
     if (!Controller.components[name]) {
         Controller.components[name] = Component;
     }
-    ;
 
     Controller.createClassInstanses(name);
 };
@@ -370,6 +369,7 @@ Component.create = function (name, methods) {
 
     var protoProp = $.extend(NewClass.prototype, Component, methods, {componentName: name});
     NewClass.prototype = protoProp;
+    NewClass.prototype.constructor = Component;
 
     Controller.registerComponent(name, NewClass);
 
@@ -380,11 +380,11 @@ Component.create = function (name, methods) {
 // Пустая функция, которая будет вызвана в случае, если ее не переопределить
 Component.init = function () {};
 
-// Сообщает объекту о наличии биндинговых событий
+// Вешает на корневой элемент событие, имя которого передается в аргументе
+// в дальнейшем обработка того собятия делегируется с вложенных элементов, у которых декларативно
+// определен обработчик в свойстве data-имяСобытия
 // Обязательный аргумент events - строка с именем события или объект с именами событий
 // Например, строка 'click' сообщит о наличии в компоненте элемента с data-click
-// Второй аргумент - элемент, к которому привязывается событие. По умолчанию - 
-// корневой элемент компонента
 Component.bindingEvent = function (events) {
 
     if (typeof events === 'string') {
@@ -420,7 +420,6 @@ Component.dataEvent = function ($event, context) {
         }
         target = $(target).parent().get(0);
     }
-
     if (!events.length)
         return;
 
@@ -429,7 +428,7 @@ Component.dataEvent = function ($event, context) {
     }
 
     // Пробует вызвать переданные в строке методы
-    // Получает в 1 аргументе объект с названиями методов и ссылками на элемент, 
+    // Получает в 1 аргументе объект с названиями методов и ссылками на элемент,
     // вызвавший срабатывание события
     // во втором аргументе - объект, в контексте которого попробовать вызвать метод
     function tryOnMethods(dataFromEventElem, context) {

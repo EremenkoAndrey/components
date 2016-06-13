@@ -1,0 +1,22 @@
+{
+  "name": "components",
+  "main": "Components.js",
+  "homepage": "https://github.com/EremenkoAndrey/components",
+  "authors": [
+    "Andrey Eremenko <fr0ntender@yandex.ru>"
+  ],
+  "description": "",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "^3.0.0",
+    "jasmine-core": ">=2",
+    "jasmine-jquery": "^2.1.1"
+  }
+}
