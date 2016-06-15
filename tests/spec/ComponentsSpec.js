@@ -1,9 +1,10 @@
 describe("Component", function() {
-    var fixture = setFixtures('<div data-component="FirstComponent"><a data-click="test" href="#"><span><b data-click="test"></b></span></a></div>');
+    var fixture = setFixtures('<div data-component="FirstTestComponent"><a data-click="test" href="#"><span><b data-click="test"></b></span></a></div>');
 
     var FirstComponent = Component.create('FirstTestComponent', {
         init: function () {
         },
+        events: ['click'],
         test: function () {
             console.log('test');
         }
@@ -44,9 +45,6 @@ describe("Component", function() {
     });
 
     describe("Биндинг событий", function() {
-        beforeEach(function() {
-           firstInstance.bindingEvent('click');
-        });
 
         it("Component.dataEvent() вложенные элементы с data-click срабатывают: два вложенных элемента вызовут событие два раза", function() {
             spyOn(firstInstance, 'test');

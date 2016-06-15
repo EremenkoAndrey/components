@@ -28,8 +28,10 @@ var Controller = function () {
 
     this.findBlocks(this.$el);
 
-    func.apply(this);
+    this.isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase());
 
+    func.apply(this);
+    
 };
 
 Controller.blocks = {};
@@ -46,7 +48,7 @@ Controller.createClassInstanses = function (componentName) {
                 component = Controller.components[componentName];
 
         for (var i = 0, max = blocks.length; i < max; i++) {
-            var options = blocks[i].$el.get(0).onclick() || {};
+            var options = blocks[i].$el.get(0).onclick ? blocks[i].$el.get(0).onclick() : {};
             new component(blocks[i].$el, blocks[i].controller, options);
         }
         Controller.blocks[componentName] = [];
@@ -69,14 +71,14 @@ Controller.registerComponent = function (name, Component) {
 // в ассоциативном массиве Controller.blocks
 Controller.prototype.findBlocks = function ($object) {
     var __self = this,
-            $item = $([0]),
             name,
+            $item,
             $elements;
     
     $elements = ($object.get(0) === document) ? $('[data-component]') : $object.find('[data-component]');
 
     $elements.each(function () {
-        $item[0] = this;
+        $item = $(this);
         name = $item.data('component');
 
         if (!Controller.blocks[name]) {
@@ -209,11 +211,15 @@ Controller.prototype.set = function (propObj, silence) {
     for (var prop in propObj) {
         if (!propObj.hasOwnProperty(prop))
             continue;
-
-        this[prop] = propObj[prop];
+        
+        if(this[prop] !== propObj[prop]) {
+            this[prop] = propObj[prop]; 
+        } else {
+            silence = true;
+        }
 
         if (!silence) {
-            this.trigger('change', prop);
+            this.trigger('change', prop, propObj[prop]);
         }
     }
 };
@@ -363,7 +369,9 @@ Component.create = function (name, methods) {
         }
 
         this.options = options || {};
-
+        if(this.events.length > 0){
+            this.bindingEvent(this.events);
+        }
         this.init();
     };
 
@@ -379,26 +387,17 @@ Component.create = function (name, methods) {
 
 // Пустая функция, которая будет вызвана в случае, если ее не переопределить
 Component.init = function () {};
-
+Component.events = [];
 // Вешает на корневой элемент событие, имя которого передается в аргументе
 // в дальнейшем обработка того собятия делегируется с вложенных элементов, у которых декларативно
 // определен обработчик в свойстве data-имяСобытия
 // Обязательный аргумент events - строка с именем события или объект с именами событий
 // Например, строка 'click' сообщит о наличии в компоненте элемента с data-click
 Component.bindingEvent = function (events) {
-
-    if (typeof events === 'string') {
-
-        this.$el.on(events, function (e) {
+    for (var i = 0, max = events.length; i < max; i++) {
+        this.$el.on(events[i], function (e) {
             this.dataEvent(e, this);
         }.bind(this));
-
-    } else if ($.isArray(events)) {
-        for (var i = 0, max = events.length; i < max; i++) {
-            this.$el.on(events[i], function (e) {
-                this.dataEvent(e, this, block);
-            }.bind(this));
-        }
     }
 };
 
@@ -464,4 +463,3 @@ Component.hideOverlay = function (forMobile) {
         overlay.hideOverlay();
     }
 };
-
