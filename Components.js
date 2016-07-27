@@ -56,7 +56,7 @@ Controller.createClassInstanses = function (componentName) {
     }
 
 };
-// Регистрирует компонент в общем массиве всей контроллеров
+// Регистрирует компонент в общем массиве всей компонентов
 Controller.registerComponent = function (name, Component) {
 
     if (!Controller.components[name]) {
@@ -72,27 +72,53 @@ Controller.registerComponent = function (name, Component) {
 Controller.prototype.findBlocks = function ($object) {
     var __self = this,
             name,
+            loadUrl,
             $item,
             $elements;
     
     $elements = ($object.get(0) === document) ? $('[data-component]') : $object.find('[data-component]');
 
-    $elements.each(function () {
-        $item = $(this);
+    for (var i = 0, max = $elements.length; i < max; i++) {
+        
+        $item = $elements.eq(i);
         name = $item.data('component');
-
+        loadUrl = $item.data('component-load');
+        
         if (!Controller.blocks[name]) {
             Controller.blocks[name] = [];
         }
-
+        
         Controller.blocks[name].push({
             $el: $item,
             controller: __self
         });
 
+        // Если трубется загрузка скрипта
+        if(loadUrl) {
+            this.loadScript(loadUrl, name, $item);
+            continue;
+        }
+
+        Controller.createClassInstanses(name);
+    }
+};
+
+Controller.prototype.loadScript = function (url, name, $item) {
+    // Если компонент уже загружен - создать экземпляр и выйти
+    if(typeof (Controller.components[name]) === 'function') {
+        Controller.createClassInstanses(name);
+        return;
+    }
+    
+    // иначе загрузить
+    var res = $.getScript(url);
+    res.done(function () {
         Controller.createClassInstanses(name);
     });
-
+    res.fail(function () {
+        console.error('Component ' + name + 'is not found!');
+        $item.hide();
+    });
 };
 
 // Вызывает событие: пробегает по списку подписчиков и инициирует соответствующие 
@@ -115,10 +141,10 @@ Controller.prototype.trigger = function (name, type, data) {
         if (type && listeners[i].type !== type) {
             continue;
         }
+        // Если контекст не передан, выполнить функцию в глобальном объекте
+        var context = listeners[i].context || window;
 
-        var context = listeners[i].context;
-
-        if (data) {
+        if (data !== undefined) {
             listeners[i].method.call(context, data);
         } else {
             listeners[i].method.call(context);
@@ -144,10 +170,13 @@ Controller.prototype.on = function (name) {
 
     var newListener = {};
 
-    if (arguments.length === 3) {
-        newListener.type = null;
-        newListener.method = arguments[1];
-        newListener.context = arguments[2];
+    if (arguments.length < 4) {
+        // Если второй аргумент строка - значит передан тип, в противном случае тип не указан
+        newListener.type = (typeof (arguments[1]) === 'string') ? arguments[1] : null;
+        // Если второй аргумент функция - значит тип не указан
+        newListener.method = (typeof (arguments[1]) === 'function') ? arguments[1] : arguments[2];
+        // Если последний аргумент - это не калбэк, значит это контекст
+        newListener.context = (arguments[arguments.length - 1] !== newListener.method) ? arguments[arguments.length - 1] : null;
 
     } else if (arguments.length === 4) {
         newListener.type = arguments[1];
@@ -159,7 +188,7 @@ Controller.prototype.on = function (name) {
     }
 
     if (typeof (newListener.method) !== 'function') {
-        throw new Error('Callback is not a function');
+        throw new Error('Callback ' + name + ' is not a function');
     }
 
     this.listenetrs = this.listenetrs || {};
@@ -202,7 +231,7 @@ Controller.prototype.stopListening = function (name, type, fn) {
 // this.set({'proper': 6});
 // Установит в свойство this.proper значение 6
 // сгенерирует событие 'change' с типом 'proper'
-// TODO: не создавать событие, если совйство не изменилось
+
 Controller.prototype.set = function (propObj, silence) {
 
     if (typeof (propObj) !== 'object')
@@ -227,118 +256,6 @@ Controller.prototype.set = function (propObj, silence) {
 
 
 /*
- * Объект singleton, управляющий созданием и показом блока оверлей.
- * Если блока нет на странице, то он будет создан, если есть - к нему будет добавлен 
- * css-класс .active
- * Возможно создание обычного оверлея с id "overlay" и аналогичным классом
- * и версии для мобильных телефонов с id "overlay_mobile" и аналогичным классом
- * 
- * Примеры:
- * - Показать оверлей (создаст при необходимости):
- * this.showOverlay();
- * - Показать мобильный оверлей:
- * this.showMobileOverlay()
- * будет показад блок с id и классом "overlay_mobile" 
- * 
- * Зависимости: 
- * - jQuery
- */
-
-var Overlay = function () {
-    var instance;
-    Overlay = function Overlay() {
-        return instance;
-    };
-    Overlay.prototype = this;
-    instance = new Overlay();
-    instance.constructor = Overlay;
-
-    var overlay = document.getElementById('overlay'),
-            mobileOverlay = document.getElementById('overlay_mobile'),
-            $overlay,
-            $mobileOverlay;
-
-    if (overlay) {
-        $overlay = $($overlay);
-    }
-
-    if (mobileOverlay) {
-        $mobileOverlay = $($mobileOverlay);
-    }
-
-    var status = false,
-            mobileStatus = false;
-
-    // Создать/показать оверлей 
-    this.showOverlay = function () {
-        if (!overlay) {
-            createOverlay();
-
-            $overlay.addClass('active');
-            status = true;
-
-        } else if (!status) {
-
-            $overlay.addClass('active');
-            status = true;
-        }
-    };
-
-    // Создать/показать мобильный оверлей 
-    this.showMobileOverlay = function () {
-
-        if (!mobileOverlay) {
-            createOverlay('_mobile');
-
-            $mobileOverlay.addClass('active');
-            mobileStatus = true;
-
-        } else if (!mobileStatus) {
-
-            $mobileOverlay.addClass('active');
-            mobileStatus = true;
-        }
-
-    };
-
-    // Скрыть оверлей
-    this.hideOverlay = function () {
-        if ($overlay && status) {
-            $overlay.removeClass('active');
-            status = false;
-        }
-    };
-
-    // Скрыть мобильный оверлей
-    this.hideMobileOverlay = function () {
-        if ($mobileOverlay && mobileStatus) {
-            $mobileOverlay.removeClass('active');
-            mobileStatus = false;
-        }
-    };
-
-    // Функция создает оверлей и добавляет его на страницу
-    function createOverlay(mobileModifier) {
-        var mod = mobileModifier || '';
-
-        var $block = $('<div class="overlay' + mod + '" id="overlay' + mod + '"></div>');
-
-        if (mobileModifier) {
-            $mobileOverlay = $block;
-            mobileOverlay = $block.get(0);
-        } else {
-            $overlay = $block;
-            overlay = $block.get(0);
-        }
-
-        $block.appendTo('body');
-    }
-
-
-    return instance;
-};
-
-/*
  * Объект, предназначенный для передачи наследованием его свойств создаваемым
  * компонентам.
  * 
@@ -354,7 +271,10 @@ var Overlay = function () {
  * - Controller.js
  * - jQuery
  */
-var Component = {};
+var Component = window.Component || {};
+if(!window.Component) {
+    window.Component = Component;
+}
 // Функция создает новый компонент.
 // первый аргумент - строка с названием компонента,
 // второй аргумент - объект с методами нового объекта
@@ -438,28 +358,5 @@ Component.dataEvent = function ($event, context) {
                 context[methods[i]]($event, dataFromEventElem.target);
             }
         }
-    }
-};
-
-// Методы showOverlay и hideOverlay - обертки для доступа к методам модуля Overlay
-// Наличие аргумента предполагает, что необходимо создать/удалить оверлей, который 
-// будет показан только в мобильных устройствах
-//
-// Создает/показывает оверлей
-Component.showOverlay = function (forMobile) {
-    var overlay = new Overlay;
-    if (forMobile) {
-        overlay.showMobileOverlay();
-    } else {
-        overlay.showOverlay();
-    }
-};
-// Скрывает оверлей
-Component.hideOverlay = function (forMobile) {
-    var overlay = new Overlay;
-    if (forMobile) {
-        overlay.hideMobileOverlay();
-    } else {
-        overlay.hideOverlay();
     }
 };
