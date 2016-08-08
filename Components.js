@@ -36,6 +36,7 @@ var Controller = function () {
 
 Controller.blocks = {};
 Controller.components = {};
+Controller.instances = {};
 
 // Если для компонента есть ожидающий его блок, то блок активируется с этим 
 // компонентом и удяляется из очереди
@@ -45,11 +46,13 @@ Controller.createClassInstanses = function (componentName) {
             Controller.components[componentName]) {
 
         var blocks = Controller.blocks[componentName],
-                component = Controller.components[componentName];
+                Component = Controller.components[componentName];
 
         for (var i = 0, max = blocks.length; i < max; i++) {
-            var options = blocks[i].$el.get(0).onclick ? blocks[i].$el.get(0).onclick() : {};
-            new component(blocks[i].$el, blocks[i].controller, options);
+            Component.instancesCount = Component.instancesCount + 1;
+            var options = blocks[i].$el.get(0).onclick ? blocks[i].$el.get(0).onclick() : {},
+                    intstId = componentName + Component.instancesCount;
+            new Component(blocks[i].$el, blocks[i].controller, options, intstId);
         }
         Controller.blocks[componentName] = [];
 
@@ -142,9 +145,9 @@ Controller.prototype.trigger = function (name, type, data) {
     var listeners = this.listenetrs[name];
 
     for (var i = 0, max = listeners.length; i < max; i++) {
-        if (type && listeners[i].type !== type) {
-            continue;
-        }
+        if (listeners[i].type !== null && listeners[i].type !== type) {
+                continue;
+            }
         // Если контекст не передан, выполнить функцию в глобальном объекте
         var context = listeners[i].context || window;
 
@@ -284,7 +287,8 @@ if(!window.Component) {
 // второй аргумент - объект с методами нового объекта
 Component.create = function (name, methods) {
 
-    var NewClass = function (block, controller, options) {
+    var NewClass = function (block, controller, options, intstId) {
+        this.intstId = options.intstId || intstId;
         this.controller = controller;
         this.$el = block.jquery ? block : $(block);
         this.el = this.$el.get(0);
@@ -296,13 +300,16 @@ Component.create = function (name, methods) {
         if(this.events.length > 0){
             this.bindingEvent(this.events);
         }
+        
+        Controller.instances[this.intstId] = this;
         this.init();
+        this.controller.trigger('inited', this.intstId);
     };
-
+    
     var protoProp = $.extend(NewClass.prototype, Component, methods, {componentName: name});
     NewClass.prototype = protoProp;
     NewClass.prototype.constructor = Component;
-
+    NewClass.instancesCount = 0;
     Controller.registerComponent(name, NewClass);
 
     return NewClass;

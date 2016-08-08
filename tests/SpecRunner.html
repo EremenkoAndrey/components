@@ -12,14 +12,34 @@
   <script src="lib/jasmine-2.4.1/boot.js"></script>
   <script src="../libs/jquery/dist/jquery.min.js"></script>
   <script src="../libs/jasmine-jquery/lib/jasmine-jquery.js"></script>
+
+</head>
+
+<body>
+    <div data-component="FirstTestComponent" onclick="return {
+        intstId: 'intstId-First',
+        dependence: 'intstId-Second'
+    };">
+        <a data-click="test" href="#">
+            <span>
+                <b data-click="test"></b>
+            </span>
+        </a>
+    </div>
+    
+    <div data-component="SecondTestComponent" onclick="return {
+        intstId: 'intstId-Second'
+    };">
+        <a data-click="test" href="#">
+            <span>
+                <b data-click="test"></b>
+            </span>
+        </a>
+    </div>
   <!-- include source files here... -->
   <script src="../Components.js"></script>
 
   <!-- include spec files here... -->
   <script src="spec/ComponentsSpec.js"></script>
-
-</head>
-
-<body>
 </body>
 </html>
