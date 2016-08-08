@@ -109,14 +109,18 @@ Controller.prototype.loadScript = function (url, name, $item) {
         Controller.createClassInstanses(name);
         return;
     }
-    
+
     // иначе загрузить
     var res = $.getScript(url);
     res.done(function () {
         Controller.createClassInstanses(name);
     });
-    res.fail(function () {
-        console.error('Component ' + name + 'is not found!');
+    res.fail(function (e) {
+        if(e.status === 404) {
+           console.error('Component ' + name + ' is not found in ' + url); 
+        } else {
+           console.error('Component ' + name + ' is not correct');
+        }
         $item.hide();
     });
 };
