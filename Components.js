@@ -17,7 +17,7 @@
 
 var Controller = function () {
     var func;
-    
+
     if(arguments.length > 1 ) {
         this.$el = arguments[0];
         func = arguments[1];
@@ -25,7 +25,8 @@ var Controller = function () {
         this.$el = $(document);
         func = arguments[0];
     }
-
+    this.dependencies = {};
+    
     this.findBlocks(this.$el);
 
     this.isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase());
@@ -36,7 +37,6 @@ var Controller = function () {
 
 Controller.blocks = {};
 Controller.components = {};
-Controller.instances = {};
 
 // Если для компонента есть ожидающий его блок, то блок активируется с этим 
 // компонентом и удяляется из очереди
@@ -46,13 +46,13 @@ Controller.createClassInstanses = function (componentName) {
             Controller.components[componentName]) {
 
         var blocks = Controller.blocks[componentName],
-                Component = Controller.components[componentName];
+                componentClass = Controller.components[componentName];
 
         for (var i = 0, max = blocks.length; i < max; i++) {
-            Component.instancesCount = Component.instancesCount + 1;
+            componentClass.instancesCount = componentClass.instancesCount + 1;
             var options = blocks[i].$el.get(0).onclick ? blocks[i].$el.get(0).onclick() : {},
-                    intstId = componentName + Component.instancesCount;
-            new Component(blocks[i].$el, blocks[i].controller, options, intstId);
+                    intstId = componentName + componentClass.instancesCount;
+            new componentClass(blocks[i].$el, blocks[i].controller, options, intstId);
         }
         Controller.blocks[componentName] = [];
 
@@ -67,6 +67,20 @@ Controller.registerComponent = function (name, Component) {
     }
 
     Controller.createClassInstanses(name);
+};
+
+// Сообщает всем подписчикам об инициализации компонента
+Controller.prototype.reportComponentInited = function (instanceId) {
+    var dependencies = this.dependencies[instanceId];
+
+    if (!dependencies) {
+        dependencies = 'inited';
+    } else if (Array.isArray(dependencies)) {
+        dependencies.forEach(function (instanceFunction) {
+            instanceFunction(instanceId);
+        });
+        dependencies = 'inited';
+    }
 };
 
 // Ищет на страница блоки, связанные с определенными компонентами 
@@ -288,8 +302,8 @@ if(!window.Component) {
 Component.create = function (name, methods) {
 
     var NewClass = function (block, controller, options, intstId) {
-        this.intstId = options.intstId || intstId;
         this.controller = controller;
+        this.intstId = options.intstId || intstId;
         this.$el = block.jquery ? block : $(block);
         this.el = this.$el.get(0);
         if (this.$el.length > 1) {
@@ -297,13 +311,76 @@ Component.create = function (name, methods) {
         }
 
         this.options = options || {};
-        if(this.events.length > 0){
+        if (this.events.length > 0) {
             this.bindingEvent(this.events);
         }
+
+        if (this.options.dependence) {
+            // Если передана строка, то преобразовать к массиву
+            if (typeof (this.options.dependence) === 'string') {
+                var depString = this.options.dependence;
+                this.options.dependence = [];
+                this.options.dependence.push(depString);
+            }
+            // Собираем массив компонентов-зависимостей, которые еще не инициализированы
+            var arrNoInitedDeps = this.options.dependence.filter(function (intstId) {
+                return this.controller[intstId] !== 'inited';
+            }.bind(this));
+
+
+            if (arrNoInitedDeps.length === 0) {
+                initComponent.apply(this);
+            } else {
+               new DependenceManager(this, controller).init();
+                
+            }
+
+        } else {
+            initComponent.apply(this);
+        }
+
+        function initComponent() {
+            this.init();
+            this.controller.reportComponentInited(this.intstId);
+        }
         
-        Controller.instances[this.intstId] = this;
-        this.init();
-        this.controller.trigger('inited', this.intstId);
+        // Объект, управляющий зависимостями
+        function DependenceManager(context, controller) {
+            var parent = context,
+                    self = this;
+
+            // Записывает метод dependenceManager.checkWithout в контроллер
+            this.init = function () {
+                arrNoInitedDeps.forEach(function (intstId) {
+
+                    if (!controller.dependencies[intstId]) {
+                        controller.dependencies[intstId] = [];
+                    }
+
+                    controller.dependencies[intstId].push(self.checkWithout);
+
+                });
+            };
+            
+            // Получает intstId компонента и удаляет его из списка зависимостей
+            // Если после этого список зависимостей становится пустым - инициализирует 
+            // компонент
+            this.checkWithout = function (intstId) {
+                var index = arrNoInitedDeps.findIndex(function (item) {
+                    return item === intstId;
+                });
+
+                if (index !== -1) {
+                    arrNoInitedDeps.splice(index, 1);
+                }
+
+                if (arrNoInitedDeps.length === 0) {
+                    initComponent.apply(parent);
+                }
+
+            };
+        }
+
     };
     
     var protoProp = $.extend(NewClass.prototype, Component, methods, {componentName: name});

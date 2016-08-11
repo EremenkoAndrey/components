@@ -1,5 +1,6 @@
 Component.create('FirstTestComponent', {
     init: function () {
+        console.log(this.intstId + ' inited');
         this.controller.on('test-event', 'type', function (){
             console.log('test-event');
         });
@@ -12,6 +13,7 @@ Component.create('FirstTestComponent', {
 
 Component.create('SecondTestComponent', {
     init: function () {
+        console.log(this.intstId + ' inited');
         this.controller.trigger('test-event');
     },
     test2: function () {}
@@ -22,34 +24,24 @@ var controller;
 describe("Controller", function () {
     
     beforeEach(function () {
-        new Controller(function () {    });
+        controller = new Controller(function () {    });
         
     });
     
-    it("Controller создан", function () {
+    it("Controller создается", function () {
         expect(Controller).toBeDefined();
     });
     
-    it("findBlocks находит два блока и добавляет их в массив Controller.blocks", function () {
-        expect(Controller.blocks['FirstTestComponent']).toBeDefined();
-        expect(Controller.blocks['SecondTestComponent']).toBeDefined();
-    });
+//    it("findBlocks находит два блока и добавляет их в массив Controller.blocks", function () {
+//        expect(Controller.blocks['FirstTestComponent']).toBeDefined();
+//        expect(Controller.blocks['SecondTestComponent']).toBeDefined();
+//    });
+//    
+//    it("Соответствующие блоку компоненты уже зарегистрированы", function () {
+//        expect(Controller.components['FirstTestComponent']).toBeDefined();
+//        expect(Controller.components['SecondTestComponent']).toBeDefined();
+//    });
     
-    it("Соответствующие блоку компоненты уже зарегистрированы", function () {
-        expect(Controller.components['FirstTestComponent']).toBeDefined();
-        expect(Controller.components['SecondTestComponent']).toBeDefined();
-    });
-    
-    it("У экземпляров есть уникальные intstId", function () {
-        var previewskey;
-        for (var key in Controller.instances) {
-            expect(key !== previewskey).toBe(true);
-            expect(typeof Controller.instances[key] === 'object').toBe(true);
-            expect(Controller.instances[key].intstId).toBeDefined();
-            previewskey = key;
-        }
-        console.log(Controller.instances);
-    });
 
 });
 
