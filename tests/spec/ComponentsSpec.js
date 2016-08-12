@@ -1,9 +1,7 @@
 Component.create('FirstTestComponent', {
     init: function () {
         console.log(this.intstId + ' inited');
-        this.controller.on('test-event', 'type', function (){
-            console.log('test-event');
-        });
+        this.controller.trigger('test-event');
     },
     events: ['click'],
     test: function () {
@@ -14,7 +12,9 @@ Component.create('FirstTestComponent', {
 Component.create('SecondTestComponent', {
     init: function () {
         console.log(this.intstId + ' inited');
-        this.controller.trigger('test-event');
+        this.controller.on('test-event', function (){
+            console.log('test-event');
+        });
     },
     test2: function () {}
 });

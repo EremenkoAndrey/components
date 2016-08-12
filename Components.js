@@ -112,7 +112,7 @@ Controller.prototype.findBlocks = function ($object) {
 
         // Если трубется загрузка скрипта
         if(loadUrl) {
-            this.loadScript(loadUrl, name, $item);
+            this.loadScript(loadUrl, name);
             continue;
         }
 
@@ -120,7 +120,7 @@ Controller.prototype.findBlocks = function ($object) {
     }
 };
 
-Controller.prototype.loadScript = function (url, name, $item) {
+Controller.prototype.loadScript = function (url, name) {
     // Если компонент уже загружен - создать экземпляр и выйти
     if(typeof (Controller.components[name]) === 'function') {
         Controller.createClassInstanses(name);
@@ -138,7 +138,6 @@ Controller.prototype.loadScript = function (url, name, $item) {
         } else {
            console.error('Component ' + name + ' is not correct');
         }
-        $item.hide();
     });
 };
 
@@ -331,7 +330,7 @@ Component.create = function (name, methods) {
             if (arrNoInitedDeps.length === 0) {
                 initComponent.apply(this);
             } else {
-               new DependenceManager(this, controller).init();
+               dependenceManager(this, controller).init();
                 
             }
 
@@ -344,20 +343,19 @@ Component.create = function (name, methods) {
             this.controller.reportComponentInited(this.intstId);
         }
         
-        // Объект, управляющий зависимостями
-        function DependenceManager(context, controller) {
-            var parent = context,
-                    self = this;
+        // Функция возвращает объект, управляющий зависимостями
+        function dependenceManager(context, controller) {
+            
+            var manager = {};
 
             // Записывает метод dependenceManager.checkWithout в контроллер
-            this.init = function () {
+            manager.init = function () {
                 arrNoInitedDeps.forEach(function (intstId) {
 
                     if (!controller.dependencies[intstId]) {
                         controller.dependencies[intstId] = [];
                     }
-
-                    controller.dependencies[intstId].push(self.checkWithout);
+                    controller.dependencies[intstId].push(manager.checkWithout);
 
                 });
             };
@@ -365,7 +363,7 @@ Component.create = function (name, methods) {
             // Получает intstId компонента и удаляет его из списка зависимостей
             // Если после этого список зависимостей становится пустым - инициализирует 
             // компонент
-            this.checkWithout = function (intstId) {
+            manager.checkWithout = function (intstId) {
                 var index = arrNoInitedDeps.findIndex(function (item) {
                     return item === intstId;
                 });
@@ -375,10 +373,12 @@ Component.create = function (name, methods) {
                 }
 
                 if (arrNoInitedDeps.length === 0) {
-                    initComponent.apply(parent);
+                    initComponent.apply(context);
                 }
 
             };
+            
+            return manager;
         }
 
     };
