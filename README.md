@@ -47,6 +47,10 @@ Component.create('MainMenu', {
 Пример: `events = ['click']` будет обрабатывать событие, установленное на одном из элементов внутри компонента со свойством data-click `<div data-click="method">Кликни сюда</div>`. При клике на этот элемент будет вызван метод компонента "method"
 - **bindingEvent** - служебная функция для обработки событий, перечисленных в массиве events
 - **dataEvent** - служебная функция для обработки событий, перечисленных в массиве events
+- **on(name, type, callback)** - устанавливает обработчик на пользовательское событие.
+ _name_ (строка) - имя события, обязательный аргумент
+_type_ (строка) - тип события, необязательный аргумент
+_callback_ - функция, которая будет выполнена при срабатывании события, обязательный аргумент
 
 ## Инициализация компонента
 
@@ -82,7 +86,7 @@ new Controller($(document), function(){
 _name_ (строка) - имя события, обязательный аргумент
 _type_ (строка или null) - тип события, обязательный аргумент, при наличии третьего аргумента, в противном случае не обязательный
 _data_ (произвольный тип) - данные, которые будут переданы в обработчик события, необязательный аргумент
-- **on(name, type, func, context)** - устанавливает обработчик на пользовательское событие.
+- **on(name, type, func, context)** - устанавливает обработчик на пользовательское событие. Если нет необходимости передать в обработчик определенный контекст, то следует использовать метод on() компонента, который вызывает коллбэк в контексте компонента. 
 _name_ (строка) - имя события, обязательный аргумент
 _type_ (строка) - тип события, необязательный аргумент
 _func_ - функция, которая будет выполнена при срабатывании события, обязательный аргумент
@@ -181,9 +185,9 @@ Component.create('Button', {
             this.controller.set(propsObject);
         }.bind(this));
         // слушаем событие изменения свойства в контроллере и актуализируем его
-        this.controller.on('change', prop, function (status) {
+        this.on('change', prop, function (status) {
             this.status = status;
-        }, this);
+        });
     }
 });
 ```
@@ -249,13 +253,13 @@ _На самом деле делать эти два метода публичн
 В функцию _init()_ прописываем обработчик события 'change':
 ```
 init: function () {
-    this.controller.on('change', 'modalWindow', function (status) {
+    this.on('change', 'modalWindow', function (status) {
         if(status === true) {
             this.show();
         } else {
             this.hide();
         }
-    }, this);
+    });
 },
 ```
 В зависимости от нового статуса показываем или скрываем окно. 
@@ -264,13 +268,13 @@ init: function () {
 ```
 Component.create('Modal', {
     init: function () {
-        this.controller.on('change', 'modalWindow', function (status) {
+        this.on('change', 'modalWindow', function (status) {
             if(status === true) {
                 this.show();
             } else {
                 this.hide();
             }
-        }, this);
+        });
     },
     hide: function () {
         this.el.hidden = true;
@@ -315,13 +319,13 @@ Component.create('Modal', {
 Component.create('Modal', {
     events: ['click'],
     init: function () {
-        this.controller.on('change', 'modalWindow', function (status) {
+        this.on('change', 'modalWindow', function (status) {
             if(status) {
                 show.apply(this);
             } else {
                 hide.apply(this);
             }
-        }, this);
+        });
         function hide() {
             this.el.hidden = true;
         }
