@@ -1,18 +1,18 @@
 /*
  * Экземпляр этого объекта - контроллер, умеющий слушать события компонентов
- * 
+ *
  * Пример создания экземпляра:
  * var page = new Controller({
  *      init: function(){
  *          console.log('Controller created!');
  *      }
  * })
- * 
+ *
  * Определяемая при создании объекта функция init() будет вызвана при создании экземпляра
- * 
- * Зависимости: 
+ *
+ * Зависимости:
  * - jQuery
- * 
+ *
  */
 
 var Controller = function () {
@@ -26,32 +26,32 @@ var Controller = function () {
         func = arguments[0];
     }
     this.dependencies = {};
-    
+
     this.findBlocks(this.$el);
 
     this.isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase());
 
     func.apply(this);
-    
+
 };
 
 Controller.blocks = {};
 Controller.components = {};
 
-// Если для компонента есть ожидающий его блок, то блок активируется с этим 
+// Если для компонента есть ожидающий его блок, то блок активируется с этим
 // компонентом и удяляется из очереди
 Controller.createClassInstanses = function (componentName) {
 
     if (Controller.blocks[componentName] &&
-            Controller.components[componentName]) {
+        Controller.components[componentName]) {
 
         var blocks = Controller.blocks[componentName],
-                componentClass = Controller.components[componentName];
+            componentClass = Controller.components[componentName];
 
         for (var i = 0, max = blocks.length; i < max; i++) {
             componentClass.instancesCount = componentClass.instancesCount + 1;
             var options = blocks[i].$el.get(0).onclick ? blocks[i].$el.get(0).onclick() : {},
-                    intstId = componentName + componentClass.instancesCount;
+                intstId = componentName + componentClass.instancesCount;
             new componentClass(blocks[i].$el, blocks[i].controller, options, intstId);
         }
         Controller.blocks[componentName] = [];
@@ -83,28 +83,28 @@ Controller.prototype.reportComponentInited = function (instanceId) {
     }
 };
 
-// Ищет на страница блоки, связанные с определенными компонентами 
-// и сохраняет их и ссылку на свой экземпляр 
+// Ищет на страница блоки, связанные с определенными компонентами
+// и сохраняет их и ссылку на свой экземпляр
 // в ассоциативном массиве Controller.blocks
 Controller.prototype.findBlocks = function ($object) {
     var __self = this,
-            name,
-            loadUrl,
-            $item,
-            $elements;
-    
+        name,
+        loadUrl,
+        $item,
+        $elements;
+
     $elements = ($object.get(0) === document) ? $('[data-component]') : $object.find('[data-component]');
 
     for (var i = 0, max = $elements.length; i < max; i++) {
-        
+
         $item = $elements.eq(i);
         name = $item.data('component');
         loadUrl = $item.data('component-load');
-        
+
         if (!Controller.blocks[name]) {
             Controller.blocks[name] = [];
         }
-        
+
         Controller.blocks[name].push({
             $el: $item,
             controller: __self
@@ -134,20 +134,20 @@ Controller.prototype.loadScript = function (url, name) {
     });
     res.fail(function (e) {
         if(e.status === 404) {
-           console.error('Component ' + name + ' is not found in ' + url); 
+            console.error('Component ' + name + ' is not found in ' + url);
         } else {
-           console.error('Component ' + name + ' is not correct');
+            console.error('Component ' + name + ' is not correct');
         }
     });
 };
 
-// Вызывает событие: пробегает по списку подписчиков и инициирует соответствующие 
-// методы. Помимо назывнаия события может сообщать его тип. 
-// Пример: 
+// Вызывает событие: пробегает по списку подписчиков и инициирует соответствующие
+// методы. Помимо назывнаия события может сообщать его тип.
+// Пример:
 // this.trigger('change', 'test');
 // Аргументы:
-// name (строка) - название события 
-// type (строка) - тип события 
+// name (строка) - название события
+// type (строка) - тип события
 // data - произвольные данные, которые будут переданы в качестве аргумента вызываемому
 // методу
 Controller.prototype.trigger = function (name, type, data) {
@@ -159,8 +159,8 @@ Controller.prototype.trigger = function (name, type, data) {
 
     for (var i = 0, max = listeners.length; i < max; i++) {
         if (listeners[i].type !== null && listeners[i].type !== type) {
-                continue;
-            }
+            continue;
+        }
         // Если контекст не передан, выполнить функцию в глобальном объекте
         var context = listeners[i].context || window;
 
@@ -172,14 +172,14 @@ Controller.prototype.trigger = function (name, type, data) {
     }
 };
 
-// Слушает событие компонента, при срабатывании события вызывает переданную функцию. 
+// Слушает событие компонента, при срабатывании события вызывает переданную функцию.
 // Первый аргумент - название события, строка
 // Вторым необязательным аргументом можно передать тип события
 // Третьим аргументом (вторым в случае отсутствия типа) передается функция,
 // которая будет вызвана при срабатывании события
 // Последний аргумент - контекст, в котором будет вызвана переданная функция
-// Пример: 
-// this.on('change', 'test', function(){
+// Пример:
+// this.controller.on('change', 'test', function(){
 //  console.log('changed!')
 // }, this)
 
@@ -242,7 +242,7 @@ Controller.prototype.stopListening = function (name, type, fn) {
 };
 
 // Изменяет собственное свойство объекта, при его наличии.
-// При изменении срабатывает событие 'change' с типом соответствующим 
+// При изменении срабатывает событие 'change' с типом соответствующим
 // имени изменяемого свойства
 // Аргументы:
 // propObj - объект, в котором перечислены свойства и их устанавливаемые значения
@@ -260,9 +260,9 @@ Controller.prototype.set = function (propObj, silence) {
     for (var prop in propObj) {
         if (!propObj.hasOwnProperty(prop))
             continue;
-        
+
         if(this[prop] !== propObj[prop]) {
-            this[prop] = propObj[prop]; 
+            this[prop] = propObj[prop];
         } else {
             silence = true;
         }
@@ -273,20 +273,18 @@ Controller.prototype.set = function (propObj, silence) {
     }
 };
 
-
-
 /*
  * Объект, предназначенный для передачи наследованием его свойств создаваемым
  * компонентам.
- * 
+ *
  * Пример вызова:
  * Component.create('MainMenu', {
  *  init: function(){
  *      console.log('Компонент MainMenu инициирован!');
  *  }
  * });
- * 
- * Зависимости: 
+ *
+ * Зависимости:
  * - Overlay.js
  * - Controller.js
  * - jQuery
@@ -330,8 +328,8 @@ Component.create = function (name, methods) {
             if (arrNoInitedDeps.length === 0) {
                 initComponent.apply(this);
             } else {
-               dependenceManager(this, controller).init();
-                
+                dependenceManager(this, controller).init();
+
             }
 
         } else {
@@ -342,10 +340,10 @@ Component.create = function (name, methods) {
             this.init();
             this.controller.reportComponentInited(this.intstId);
         }
-        
+
         // Функция возвращает объект, управляющий зависимостями
         function dependenceManager(context, controller) {
-            
+
             var manager = {};
 
             // Записывает метод dependenceManager.checkWithout в контроллер
@@ -359,9 +357,9 @@ Component.create = function (name, methods) {
 
                 });
             };
-            
+
             // Получает intstId компонента и удаляет его из списка зависимостей
-            // Если после этого список зависимостей становится пустым - инициализирует 
+            // Если после этого список зависимостей становится пустым - инициализирует
             // компонент
             manager.checkWithout = function (intstId) {
                 var index = arrNoInitedDeps.findIndex(function (item) {
@@ -377,12 +375,12 @@ Component.create = function (name, methods) {
                 }
 
             };
-            
+
             return manager;
         }
 
     };
-    
+
     var protoProp = $.extend(NewClass.prototype, Component, methods, {componentName: name});
     NewClass.prototype = protoProp;
     NewClass.prototype.constructor = Component;
@@ -410,13 +408,13 @@ Component.bindingEvent = function (events) {
 };
 
 // Обрабатывает декларативно заданные в шаблоне события
-// Аргументы: event - объект события, context - объект, в контексте которого 
-// должен вызываться метод, который получит в аргументах jquery-объект события и 
+// Аргументы: event - объект события, context - объект, в контексте которого
+// должен вызываться метод, который получит в аргументах jquery-объект события и
 // ссылку на элемент, вызвавший срабатывание события
 Component.dataEvent = function ($event, context) {
     var target = $event.target,
-            bindObj = context || this,
-            events = [];
+        bindObj = context || this,
+        events = [];
 
     while (target !== this.el) {
         if ($(target).data()[$event.type]) {
@@ -449,27 +447,54 @@ Component.dataEvent = function ($event, context) {
     }
 };
 
+// Обертка над методом контроллера on().
+// Первый обязательный аргумент - имя события
+// Второй необязательный аргумент - тип события
+// Третий обязательный аргуент - каллбэк-функция,
+// которая будет вызвана в контексте компонента.
+// Если необходимо передать другой контекст, лучше использовать
+// непосредственно сам метод контроллера on().
+// Пример вызова:
+// this.on('change', 'test', function(){
+//  console.log('changed!')
+// })
+Component.on = function (name) {
+    var type,
+        callback;
+
+    if( typeof (arguments[1]) === 'function') {
+        type = null;
+        callback = arguments[1];
+    } else {
+        type = arguments[1];
+        callback = arguments[2];
+    }
+
+    this.controller.on(name, type, callback, this)
+};
+
 // Полифиллы
 
 if (!Array.prototype.findIndex) {
-  Array.prototype.findIndex = function(predicate) {
-    if (this == null) {
-      throw new TypeError('Array.prototype.findIndex called on null or undefined');
-    }
-    if (typeof predicate !== 'function') {
-      throw new TypeError('predicate must be a function');
-    }
-    var list = Object(this);
-    var length = list.length >>> 0;
-    var thisArg = arguments[1];
-    var value;
+    Array.prototype.findIndex = function(predicate) {
+        if (this == null) {
+            throw new TypeError('Array.prototype.findIndex called on null or undefined');
+        }
+        if (typeof predicate !== 'function') {
+            throw new TypeError('predicate must be a function');
+        }
+        var list = Object(this);
+        var length = list.length >>> 0;
+        var thisArg = arguments[1];
+        var value;
 
-    for (var i = 0; i < length; i++) {
-      value = list[i];
-      if (predicate.call(thisArg, value, i, list)) {
-        return i;
-      }
-    }
-    return -1;
-  };
+        for (var i = 0; i < length; i++) {
+            value = list[i];
+            if (predicate.call(thisArg, value, i, list)) {
+                return i;
+            }
+        }
+        return -1;
+    };
 }
+
