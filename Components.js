@@ -51,8 +51,8 @@ Controller.createClassInstanses = function (componentName) {
         for (var i = 0, max = blocks.length; i < max; i++) {
             componentClass.instancesCount = componentClass.instancesCount + 1;
             var options = blocks[i].$el.get(0).onclick ? blocks[i].$el.get(0).onclick() : {},
-                intstId = componentName + componentClass.instancesCount;
-            new componentClass(blocks[i].$el, blocks[i].controller, options, intstId);
+                instId = componentName + componentClass.instancesCount;
+            new componentClass(blocks[i].$el, blocks[i].controller, options, instId);
         }
         Controller.blocks[componentName] = [];
 
@@ -298,9 +298,9 @@ if(!window.Component) {
 // второй аргумент - объект с методами нового объекта
 Component.create = function (name, methods) {
 
-    var NewClass = function (block, controller, options, intstId) {
+    var NewClass = function (block, controller, options, instId) {
         this.controller = controller;
-        this.intstId = options.intstId || intstId;
+        this.instId = options.instId || instId;
         this.$el = block.jquery ? block : $(block);
         this.el = this.$el.get(0);
         if (this.$el.length > 1) {
@@ -320,8 +320,8 @@ Component.create = function (name, methods) {
                 this.options.dependence.push(depString);
             }
             // Собираем массив компонентов-зависимостей, которые еще не инициализированы
-            var arrNoInitedDeps = this.options.dependence.filter(function (intstId) {
-                return this.controller[intstId] !== 'inited';
+            var arrNoInitedDeps = this.options.dependence.filter(function (instId) {
+                return this.controller[instId] !== 'inited';
             }.bind(this));
 
 
@@ -338,7 +338,7 @@ Component.create = function (name, methods) {
 
         function initComponent() {
             this.init();
-            this.controller.reportComponentInited(this.intstId);
+            this.controller.reportComponentInited(this.instId);
         }
 
         // Функция возвращает объект, управляющий зависимостями
@@ -348,22 +348,22 @@ Component.create = function (name, methods) {
 
             // Записывает метод dependenceManager.checkWithout в контроллер
             manager.init = function () {
-                arrNoInitedDeps.forEach(function (intstId) {
+                arrNoInitedDeps.forEach(function (instId) {
 
-                    if (!controller.dependencies[intstId]) {
-                        controller.dependencies[intstId] = [];
+                    if (!controller.dependencies[instId]) {
+                        controller.dependencies[instId] = [];
                     }
-                    controller.dependencies[intstId].push(manager.checkWithout);
+                    controller.dependencies[instId].push(manager.checkWithout);
 
                 });
             };
 
-            // Получает intstId компонента и удаляет его из списка зависимостей
+            // Получает instId компонента и удаляет его из списка зависимостей
             // Если после этого список зависимостей становится пустым - инициализирует
             // компонент
-            manager.checkWithout = function (intstId) {
+            manager.checkWithout = function (instId) {
                 var index = arrNoInitedDeps.findIndex(function (item) {
-                    return item === intstId;
+                    return item === instId;
                 });
 
                 if (index !== -1) {
