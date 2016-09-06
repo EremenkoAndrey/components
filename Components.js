@@ -50,9 +50,15 @@ Controller.createClassInstanses = function (componentName) {
 
         for (var i = 0, max = blocks.length; i < max; i++) {
             componentClass.instancesCount = componentClass.instancesCount + 1;
-            var options = blocks[i].$el.get(0).onclick ? blocks[i].$el.get(0).onclick() : {},
+            var clearedEl = blocks[i].$el.get(0),
+                options = clearedEl.onclick ? clearedEl.onclick() : {},
                 instId = componentName + componentClass.instancesCount;
             new componentClass(blocks[i].$el, blocks[i].controller, options, instId);
+            // Очистить переданные параметры
+            if (clearedEl.onclick) {
+                clearedEl.onclick = null;
+                clearedEl.removeAttribute('onclick');
+            }
         }
         Controller.blocks[componentName] = [];
 
