@@ -104,6 +104,11 @@ Controller.prototype.findBlocks = function ($object) {
     for (var i = 0, max = $elements.length; i < max; i++) {
 
         $item = $elements.eq(i);
+
+        if($item.data('inited')) {
+            continue;
+        }
+
         name = $item.data('component');
         loadUrl = $item.data('component-load');
 
@@ -312,6 +317,7 @@ Component.create = function (name, methods) {
         if (this.$el.length > 1) {
             this.$el = $(this.el);
         }
+        this.$el.data('inited', true);
 
         this.options = options || {};
         if (this.events.length > 0) {
