@@ -3,7 +3,7 @@
  * Экземпляр этого объекта - контроллер, умеющий слушать события компонентов
  *
  * Пример создания экземпляра:
- * var page = new Controller({
+ * new Component.Controller({
  *      init: function(){
  *          console.log('Controller created!');
  *      }
