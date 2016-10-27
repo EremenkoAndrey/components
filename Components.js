@@ -248,17 +248,16 @@
         }
 
         // иначе загрузить
-        var res = $.getScript(url);
-        res.done(function () {
-            Controller.createClassInstanses(name);
-        });
-        res.fail(function (e) {
-            if (e.status === 404) {
-                console.error('Component ' + name + ' is not found in ' + url);
-            } else {
-                console.error('Component ' + name + ' is not correct');
-            }
-        });
+        var head = document.getElementsByTagName('head')[0];
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.charset = 'utf-8';
+        script.async = true;
+        script.src = url;
+        head.appendChild(script);
+        script.onerror = function (error) {
+            console.error('Component ' + name + ' is not found in ' + url);
+        };
     };
 
 
