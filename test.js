@@ -1,1 +1,1 @@
-document.write('555');
+var fff = require('json.js');
