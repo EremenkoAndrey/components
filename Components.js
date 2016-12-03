@@ -1,5 +1,5 @@
-/* VERSION 1.0.0
- * 
+/* VERSION 1.1.0
+ *
  * Экземпляр этого объекта - контроллер, умеющий слушать события компонентов
  *
  * Пример создания экземпляра:
@@ -19,23 +19,101 @@
 (function (factory) {
 
     window.Component = factory($);
-    
+
 })(function () {
-    
+
     var Component = {};
-    
+
     var Events = {};
+
+
 // Слушает событие, при срабатывании события вызывает переданную функцию.
 // Первый аргумент - название события, строка
-// Вторым необязательным аргументом можно передать тип события
-// Третьим аргументом (вторым в случае отсутствия типа) передается функция,
+// Можно уточнить тип события, указав его через двоеточие: "event:type"
+// в этом случае переданная функция будет вызвана только в случае совпадения типа
+// Вторым аргументом передается функция,
 // которая будет вызвана при срабатывании события
 // Последний аргумент - контекст, в котором будет вызвана переданная функция
 // Пример использования в компоненте:
-// this.on('change', 'test', function(){
+// this.listen('change:test', function(){
 //  console.log('changed!')
 // }, this)
+    Events.listen = function (name, method, context) {
+        var type = null,
+            context = context || null;
 
+        this.listenetrs = this.listenetrs || {};
+
+        if(~name.indexOf(':')) {
+            var separatedName = name.split(':', 2);
+            name = separatedName[0];
+            type = separatedName[1];
+        }
+
+        this.listenetrs[name] = this.listenetrs[name] || [];
+
+        var currentLength = this.listenetrs[name].push({
+            type: type,
+            method: method,
+            context: context
+        });
+
+        return {
+            cleared: false,
+            context: this,
+            name: name,
+            index: currentLength - 1,
+            stopListening: function () {
+                if(!this.cleared) {
+                    this.context.listenetrs[this.name][this.index] = null;
+                    this.context = null;
+                    this.cleared = true;
+                }
+            }
+        };
+    };
+
+// Вызывает событие: пробегает по списку подписчиков и инициирует соответствующие
+// методы. Помимо назывнаия события может сообщать его тип через двоеточие.
+// Пример:
+// this.emit('change:test');
+// Аргументы:
+// name (строка) - название события
+// data - произвольные данные, которые будут переданы в качестве аргумента вызываемому
+// методу
+    Events.emit = function (name, data) {
+        var type = null;
+        this.listenetrs = this.listenetrs || {};
+
+        if(~name.indexOf(':')) {
+            var separatedName = name.split(':', 2);
+            name = separatedName[0];
+            type = separatedName[1];
+        }
+
+        if (!this.listenetrs[name])
+            return;
+
+        var listeners = this.listenetrs[name];
+
+        for (var i = 0, max = listeners.length; i < max; i++) {
+            if (!listeners[i] ||
+                (listeners[i].type !== null && listeners[i].type !== type)
+            ) continue;
+
+            // Если контекст не передан, выполнить функцию в глобальном объекте
+            var context = listeners[i].context || window;
+
+            if (data !== undefined) {
+                listeners[i].method.call(context, data);
+            } else {
+                listeners[i].method.call(context);
+            }
+        }
+    };
+
+// DEPRECATED!
+// Следует использовать вместо .on метод .listen в связке с .emit
     Events.on = function (name) {
 
         if (typeof (name) !== 'string')
@@ -71,16 +149,9 @@
         this.listenetrs[name].push(newListener);
 
     };
-    
-// Вызывает событие: пробегает по списку подписчиков и инициирует соответствующие
-// методы. Помимо назывнаия события может сообщать его тип.
-// Пример:
-// this.trigger('change', 'test');
-// Аргументы:
-// name (строка) - название события
-// type (строка) - тип события
-// data - произвольные данные, которые будут переданы в качестве аргумента вызываемому
-// методу
+
+// DEPRECATED!
+// Следует использовать вместо .trigger метод .emit в связке с .listen
     Events.trigger = function (name, type, data) {
         this.listenetrs = this.listenetrs || {};
 
@@ -99,27 +170,6 @@
                 listeners[i].method.call(context, data);
             } else {
                 listeners[i].method.call(context);
-            }
-        }
-    };
-    
-// Прекращает прослушивание события. Необходимо передать:
-// name: Название события (строка) - обязательно
-// fn: Функция (ссылка на функцию, на ТУ ЖЕ САМУЮ функцию) - обязательно
-// type: Тип (строка), не обязательный аргумент
-// TODO: сделать функцию необязательный аргументом
-    Events.stopListening = function (name, type, fn) {
-        if (!this.listenetrs[name])
-            return;
-        var listeners = this.listenetrs[name];
-
-        for (var i = 0, max = listeners.length; i < max; i++) {
-            if (type && listeners[i].type !== type) {
-                continue;
-            }
-
-            if (listeners[i].method === fn) {
-                listeners.splice(i, 1);
             }
         }
     };
@@ -152,16 +202,16 @@
     Controller.createClassInstanses = function (componentName) {
 
         if (Controller.blocks[componentName] &&
-                Controller.components[componentName]) {
+            Controller.components[componentName]) {
 
             var blocks = Controller.blocks[componentName],
-                    componentClass = Controller.components[componentName];
+                componentClass = Controller.components[componentName];
 
             for (var i = 0, max = blocks.length; i < max; i++) {
                 componentClass.instancesCount = componentClass.instancesCount + 1;
                 var clearedEl = blocks[i].$el.get(0),
-                        options = clearedEl.onclick ? clearedEl.onclick() : {},
-                        instId = componentName + componentClass.instancesCount;
+                    options = clearedEl.onclick ? clearedEl.onclick() : {},
+                    instId = componentName + componentClass.instancesCount;
                 new componentClass(blocks[i].$el, blocks[i].controller, options, instId);
                 // Очистить переданные параметры
                 if (clearedEl.onclick) {
@@ -203,10 +253,10 @@
 // в ассоциативном массиве Controller.blocks
     Controller.prototype.findBlocks = function ($object) {
         var __self = this,
-                name,
-                loadUrl,
-                $item,
-                $elements;
+            name,
+            loadUrl,
+            $item,
+            $elements;
 
         $elements = ($object.get(0) === document) ? $('[data-component]') : $object.find('[data-component]');
 
@@ -288,6 +338,7 @@
             }
 
             if (!silence) {
+                this.emit('change:' + prop, propObj[prop]);
                 this.trigger('change', prop, propObj[prop]);
             }
         }
@@ -309,7 +360,7 @@
      * - Controller.js
      * - jQuery
      */
-    
+
 
 // Функция создает новый компонент.
 // первый аргумент - строка с названием компонента,
@@ -414,7 +465,7 @@
     Component.init = function () {};
     Component.events = [];
 // Вешает на корневой элемент событие, имя которого передается в аргументе
-// в дальнейшем обработка того собятия делегируется с вложенных элементов, у которых декларативно
+// в дальнейшем обработка этого собятия делегируется с вложенных элементов, у которых декларативно
 // определен обработчик в свойстве data-имяСобытия
 // Обязательный аргумент events - строка с именем события или объект с именами событий
 // Например, строка 'click' сообщит о наличии в компоненте элемента с data-click
@@ -432,8 +483,8 @@
 // ссылку на элемент, вызвавший срабатывание события
     Component.dataEvent = function ($event, context) {
         var target = $event.target,
-                bindObj = context || this,
-                events = [];
+            bindObj = context || this,
+            events = [];
 
         while (target !== this.el) {
             if ($(target).data()[$event.type]) {
@@ -465,7 +516,7 @@
             }
         }
     };
-    
+
     $.extend(Component, Events);
     $.extend(Controller.prototype, Events);
 
